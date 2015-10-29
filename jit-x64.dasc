@@ -32,6 +32,10 @@ int main(int argc, char *argv[])
 	int pcstack[MAX_NESTING];
 	int *top = pcstack, *limit = pcstack + MAX_NESTING;
 
+        // Variable for pattern analysis
+        char *tmp;
+        int c;
+
 	// Function prologue.
 	|  push PTR
 	|  mov  PTR, rdi      // rdi store 1st argument
@@ -39,16 +43,36 @@ int main(int argc, char *argv[])
 	for (char *p = read_file(argv[1]); *p; p++) {
 		switch (*p) {
 		case '>':
-			|  inc  PTR
+                        tmp = p;
+                        c = 0;
+                        while (*tmp++ == '>')
+                            c += 1;
+			|  add  PTR, c
+                        p = tmp - 2;
 			break;
 		case '<':
-			|  dec  PTR
+                        tmp = p;
+                        c = 0;
+                        while (*tmp++ == '<')
+                            c += 1;
+			|  sub  PTR, c
+                        p = tmp - 2;
 			break;
 		case '+':
-			|  inc  byte [PTR]
+                        tmp = p;
+                        c = 0;
+                        while (*tmp++ == '+')
+                            c += 1;
+                        |  add byte [PTR], c
+                        p = tmp - 2;
 			break;
 		case '-':
-			|  dec  byte [PTR]
+                        tmp = p;
+                        c = 0;
+                        while (*tmp++ == '-')
+                            c += 1;
+			|  sub  byte [PTR], c
+                        p = tmp - 2;
 			break;
 		case '.':
 			|  movzx edi, byte [PTR]
@@ -60,7 +84,18 @@ int main(int argc, char *argv[])
 			break;
 		case '[':
 			if (top == limit) err("Nesting too deep.");
-			// Each loop gets two pclabels: at the beginning and end.
+
+                        // Pattern [-]
+                        tmp = p;
+                        if (*(tmp+1) == '-' && *(tmp+2) == ']') {
+                            //printf("%c%c%c\n", *j, *(j+1), *(j+2));
+                        |   mov byte [PTR], 0
+                            p += 2;
+                            //printf("%c\n", *p);
+                            break;
+                        }
+                        
+                        // Each loop gets two pclabels: at the beginning and end.
 			// We store pclabel offsets in a stack to link the loop
 			// begin and end together.
 			maxpc += 2;

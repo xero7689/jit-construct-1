@@ -11,20 +11,45 @@ void interpret(const char *const input)
 	// Set the pointer to point at the left most cell of the tape.
 	uint8_t *ptr = tape;
 
+        // Variable for repeat pattern
+        int pc;
+        int offset;
+
 	char current_char;
 	for (int i = 0; (current_char = input[i]) != '\0'; ++i) {
+                //printf("CC: %c\n", current_char);
 		switch (current_char) {
 		case '>':
-			++ptr;
+                        pc = 0;
+                        offset = i;
+                        while (input[offset++] == '>')
+                            pc += 1;
+                        ptr += pc;
+                        i = offset - 2;
 			break;
 		case '<':
-			--ptr;
+                        pc = 0;
+                        offset = i;
+                        while (input[offset++] == '<')
+                            pc += 1;
+                        ptr -= pc;
+                        i = offset - 2;
 			break;
 		case '+':
-			++(*ptr);
+                        pc = 0;
+                        offset = i;
+                        while (input[offset++] == '+')
+                            pc += 1;
+                        *ptr += pc;
+                        i = offset - 2;
 			break;
 		case '-':
-			--(*ptr);
+                        pc = 0;
+                        offset = i;
+                        while (input[offset++] == '-')
+                            pc += 1;
+                        *ptr -= pc;
+                        i = offset - 2;
 			break;
 		case '.':
 			putchar(*ptr);
@@ -33,6 +58,27 @@ void interpret(const char *const input)
 			*ptr = getchar();
 			break;
 		case '[':
+                        // Pattern [-]                 
+                        offset = i;
+                        if (input[offset+1] == '-' && input[offset+2] == ']') {
+                            *ptr = 0;
+                            i += 2;
+                            break;
+                        }
+
+                        // Pattern [>+<-]
+                        if (input[offset+1] == '>' &&\
+                            input[offset+2] == '+' &&\
+                            input[offset+3] == '<' &&\
+                            input[offset+4] == '-' &&\
+                            input[offset+5] == ']') {
+                            *(ptr+1) += *ptr;
+                            *ptr = 0;
+                            i += 5;
+                            break;
+                        }
+                        
+                        // Default
 			if (!(*ptr)) {
 				int loop = 1;
 				while (loop > 0) {
